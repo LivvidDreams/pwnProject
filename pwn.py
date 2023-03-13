@@ -223,7 +223,7 @@ def getScript():
             open(locationDir + file, "wb").write(save.content)
 
         print("redownloaded script from github")
-        rerun()
+        rerun(True)
     else:
         exit()
 
@@ -251,6 +251,7 @@ def main():
 
     startUpRecovery()
     
+    print("!!!updated version")
 
 
 
